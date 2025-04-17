@@ -17,6 +17,23 @@ import {
 import { NotePicker, pickers } from './pickers'
 import { NoteFilterSet, FilterSet } from 'src'
 
+export default class OpenMyNotePlugin extends Plugin {
+	async onload() {
+		this.addCommand({
+			id: "open-my-favorite-note",
+			name: "Open My Favorite Note",
+			callback: async () => {
+				const file = this.app.vault.getAbstractFileByPath("path/to/YourNote.md");
+				if (file && file instanceof this.app.vault.constructor.TFile) {
+					this.app.workspace.getLeaf(true).openFile(file);
+				} else {
+					new Notice("Note not found.");
+				}
+			},
+		});
+	}
+}
+
 class FilterSetSuggestModal<T extends FilterSet> extends FuzzySuggestModal<T> {
     constructor(app: App, items: T[], callback: (item: T) => void) {
         super(app)
@@ -47,7 +64,8 @@ export async function choseFilterSet<T extends FilterSet>(
     })
 }
 
-export default class FnOPlugin extends Plugin {
+
+class FnOPlugin extends Plugin {
     settings: SettingsFNO
 
     pickers: NotePicker[] = pickers
