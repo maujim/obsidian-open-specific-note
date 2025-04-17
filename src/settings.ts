@@ -13,34 +13,11 @@ import { BoolInputPrompt, GenericInputPrompt } from './UI'
 export interface SettingsFNO {
     pickerIndex: number
     noteFilterSets: NoteFilterSet[]
-    folderFilterSets: FolderFilterSet[]
-}
-
-export const DEFAULT_NOTE_FILTER_SET: NoteFilterSet = {
-    name: 'default',
-    excludeNoteName: '',
-    excludePathName: '',
-    includeNoteName: '',
-    includePathName: '',
-    includeTags: '',
-    excludeTags: '',
-}
-
-export const DEFAULT_FOLDER_FILTER_SET: FolderFilterSet = {
-    name: 'default',
-    rootFolder: '/',
-    includeParents: false,
-    depth: 1,
-    excludeFolderName: '',
-    excludePathName: '',
-    includeFolderName: '',
-    includePathName: '',
 }
 
 export const DEFAULT_SETTINGS: SettingsFNO = {
     pickerIndex: 0,
-    noteFilterSets: [DEFAULT_NOTE_FILTER_SET],
-    folderFilterSets: [DEFAULT_FOLDER_FILTER_SET],
+    noteFilterSets: [],
 }
 
 export class FNOSettingTab extends PluginSettingTab {
@@ -94,39 +71,6 @@ export class FNOSettingTab extends PluginSettingTab {
             .setName('Note filter sets')
             .setHeading()
             .setDesc(`Add, rename and delete filter sets here`)
-
-        createSettingsNoteFilterSets(
-            containerEl,
-            this.plugin.settings.noteFilterSets,
-            async (sets) => {
-                this.plugin.settings.noteFilterSets = sets
-                await this.plugin.saveSettings()
-            },
-            () => {
-                this.hide()
-                this.plugin.createFilterSetCommands()
-                this.display()
-            },
-        )
-
-        new Setting(containerEl).setName('Folders').setHeading()
-
-        new Setting(containerEl)
-            .setName('Folder filter sets')
-            .setHeading()
-            .setDesc(`Add, rename and delete filter sets here`)
-        createSettingsFolderFilterSets(
-            containerEl,
-            this.plugin.settings.folderFilterSets,
-            async (sets) => {
-                this.plugin.settings.folderFilterSets = sets
-                await this.plugin.saveSettings()
-            },
-            () => {
-                this.hide()
-                this.display()
-            },
-        )
     }
 }
 
@@ -337,81 +281,6 @@ export function createNoteFilterSetInputs(
                 filterSet.excludeTags = v.trim()
                 await saveSet(filterSet)
             })
-    })
-}
-
-export function createSettingsFolderFilterSets(
-    containerEl: HTMLElement,
-    filterSets: FolderFilterSet[],
-    saveFilterSets: (sets: FolderFilterSet[]) => Promise<void> | void,
-    refreshDisplay: () => void,
-) {
-    filterSets.forEach((filterSet, i) => {
-        createFolderFilterSetInputs(
-            containerEl,
-            filterSet,
-            '',
-            true,
-            true,
-            (text, notify) => {
-                const nameUnique = !filterSets.some(
-                    (set) => set.name === text.trim(),
-                )
-                if (!nameUnique && notify)
-                    new Notice('Error: Filter Set Name must be unique')
-
-                const nameHasCharacters = text.trim().length > 0
-                if (!nameHasCharacters && notify)
-                    new Notice('Error: Filter Set Name cannot be blank')
-
-                return nameUnique && nameHasCharacters
-            },
-            async (set) => {
-                if (!set) {
-                    filterSets.splice(i, 1)
-                    await saveFilterSets(filterSets)
-                    refreshDisplay()
-                } else {
-                    filterSets[i] = set
-                    await saveFilterSets(filterSets)
-                }
-            },
-            refreshDisplay,
-        )
-    })
-
-    new Setting(containerEl).addButton((button) => {
-        button.setButtonText('Add folder filter set')
-        button.onClick(async (e) => {
-            const newSetName = await GenericInputPrompt.Prompt(
-                this.app,
-                'New filter set name',
-                undefined,
-                undefined,
-                true,
-                (text, notify) => {
-                    const nameHasCharacters = text.trim().length > 0
-                    if (!nameHasCharacters && notify)
-                        new Notice('Error: Filter Set Name cannot be blank')
-
-                    return nameHasCharacters
-                },
-            )
-
-            const newNameFormatted = newSetName.trim()
-            if (!newNameFormatted) {
-                new Notice('Error: Filter Set Name cannot be blank')
-                return
-            }
-
-            const newFilterSet: FolderFilterSet = {
-                ...DEFAULT_FOLDER_FILTER_SET,
-                name: newNameFormatted,
-            }
-
-            await saveFilterSets([...filterSets, newFilterSet])
-            refreshDisplay()
-        })
     })
 }
 

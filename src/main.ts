@@ -8,18 +8,14 @@ import {
     getAllTags,
 } from 'obsidian'
 import {
-    DEFAULT_NOTE_FILTER_SET,
-    DEFAULT_FOLDER_FILTER_SET,
     DEFAULT_SETTINGS,
     FNOSettingTab,
     SettingsFNO,
-    createFolderFilterSetInputs,
     createNoteFilterSetInputs,
-    createSettingsFolderFilterSets,
     createSettingsNoteFilterSets,
 } from './settings'
 import { NotePicker, pickers } from './pickers'
-import { FolderFilterSet, NoteFilterSet, FilterSet } from 'src'
+import { NoteFilterSet, FilterSet } from 'src'
 
 class FilterSetSuggestModal<T extends FilterSet> extends FuzzySuggestModal<T> {
     constructor(app: App, items: T[], callback: (item: T) => void) {
@@ -57,7 +53,6 @@ export default class FnOPlugin extends Plugin {
     pickers: NotePicker[] = pickers
 
     api_getNote: () => Promise<TFile>
-    api_getFolder: () => Promise<TFolder>
     api_createSettingsNoteFilterSets: (
         containerEl: HTMLElement,
         filterSets: NoteFilterSet[],
@@ -74,32 +69,13 @@ export default class FnOPlugin extends Plugin {
         saveSet: (set: NoteFilterSet | null) => Promise<void> | void,
         refreshDisplay: () => void,
     ) => void
-    api_createSettingsFolderFilterSets: (
-        containerEl: HTMLElement,
-        filterSets: FolderFilterSet[],
-        saveFilterSets: (sets: FolderFilterSet[]) => Promise<void> | void,
-        refreshDisplay: () => void,
-    ) => void
-    api_createFolderFilterSetInputs: (
-        containerEl: HTMLElement,
-        filterSet: FolderFilterSet,
-        description: string,
-        deletable: boolean,
-        renamable: boolean,
-        validateSetName: (name: string, notify: boolean) => boolean,
-        saveSet: (set: FolderFilterSet | null) => Promise<void> | void,
-        refreshDisplay: () => void,
-    ) => void
 
     async onload() {
         await this.loadSettings()
         ;(this.api_getNote = this.getNote),
-            (this.api_getFolder = this.getFolder),
             (this.api_createSettingsNoteFilterSets =
                 createSettingsNoteFilterSets)
         this.api_createNoteFilterSetInputs = createNoteFilterSetInputs
-        this.api_createSettingsFolderFilterSets = createSettingsFolderFilterSets
-        this.api_createFolderFilterSetInputs = createFolderFilterSetInputs
 
         // add a command to trigger the project note opener
         this.addCommand({
@@ -189,76 +165,6 @@ export default class FnOPlugin extends Plugin {
                 this.app,
                 filteredNotes,
                 (file) => resolve(file),
-            )
-        })
-    }
-
-    public getFolder(
-        folderFilterSet: string | FolderFilterSet = DEFAULT_FOLDER_FILTER_SET,
-    ): Promise<TFolder> {
-        return new Promise((resolve, reject) => {
-            if (typeof folderFilterSet === 'string') {
-                const folderFilterSetOfName =
-                    this.settings.folderFilterSets.find(
-                        (set) => set.name === folderFilterSet,
-                    )
-                if (!folderFilterSetOfName) {
-                    new Notice(
-                        `Error: Folder Filter Set "${folderFilterSet}" does not exist`,
-                    )
-                    return reject(null)
-                }
-                folderFilterSet = folderFilterSetOfName
-            }
-
-            const { includeParents, depth, rootFolder } = folderFilterSet
-
-            // Get list of folders at a depth
-            let folders: TFolder[] = []
-            function appendFoldersStartingFrom(
-                folder: TFolder,
-                currentDepth: number,
-            ) {
-                if (includeParents || currentDepth === depth)
-                    folders.push(folder)
-
-                // continue traverse if not leaf
-                if (currentDepth <= depth) {
-                    folder.children.flatMap((f) =>
-                        f instanceof TFolder
-                            ? appendFoldersStartingFrom(f, currentDepth + 1)
-                            : [],
-                    )
-                }
-            }
-
-            const rootFolderInstance =
-                this.app.vault.getAbstractFileByPath(rootFolder)
-            if (!(rootFolderInstance instanceof TFolder)) {
-                throw new Error(`Root folder ${rootFolder} does not exist`)
-            }
-
-            appendFoldersStartingFrom(rootFolderInstance, 0)
-
-            const filteredFolders = filterFolderList(folderFilterSet, folders)
-
-            if (filteredFolders.length === 0) {
-                new Notice(
-                    `Error: No folders match filter set "${folderFilterSet.name}"`,
-                )
-                return reject(
-                    `No folders match filter set "${folderFilterSet.name}"`,
-                )
-            }
-
-            if (filteredFolders.length === 1) {
-                return resolve(filteredFolders[0])
-            }
-
-            this.pickers[this.settings.pickerIndex].pick(
-                this.app,
-                filteredFolders,
-                (folder) => resolve(folder),
             )
         })
     }
@@ -422,59 +328,6 @@ function filterNoteList(settings: NoteFilterSet, list: TFile[]): TFile[] {
                     fTags.some((t) => t.startsWith(et)),
                 )
             })
-        }
-    }
-
-    return list
-}
-
-function filterFolderList(
-    settings: FolderFilterSet,
-    list: TFolder[],
-): TFolder[] {
-    if (settings.includePathName) {
-        const includePathNameRegExp = getRegexIfValid(settings.includePathName)
-        if (includePathNameRegExp) {
-            list = list.filter((f) => f.path.match(includePathNameRegExp))
-        } else {
-            list = list.filter((f) => f.path.includes(settings.includePathName))
-        }
-    }
-
-    if (settings.includeFolderName) {
-        const includeFolderNameRegExp = getRegexIfValid(
-            settings.includeFolderName,
-        )
-        if (includeFolderNameRegExp) {
-            list = list.filter((f) => f.name.match(includeFolderNameRegExp))
-        } else {
-            list = list.filter((f) =>
-                f.name.includes(settings.includeFolderName),
-            )
-        }
-    }
-
-    if (settings.excludePathName) {
-        const excludePathNameRegExp = getRegexIfValid(settings.excludePathName)
-        if (excludePathNameRegExp) {
-            list = list.filter((f) => !f.path.match(excludePathNameRegExp))
-        } else {
-            list = list.filter(
-                (f) => !f.path.includes(settings.excludePathName),
-            )
-        }
-    }
-
-    if (settings.excludeFolderName) {
-        const excludeFolderNameRegExp = getRegexIfValid(
-            settings.excludeFolderName,
-        )
-        if (excludeFolderNameRegExp) {
-            list = list.filter((f) => !f.name.match(excludeFolderNameRegExp))
-        } else {
-            list = list.filter(
-                (f) => !f.name.includes(settings.excludeFolderName),
-            )
         }
     }
 
