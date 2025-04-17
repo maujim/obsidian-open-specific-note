@@ -1,4 +1,4 @@
-import GenericInputPrompt from "./GenericInputPrompt";
-import BoolInputPrompt from "./BoolInputPrompt";
+import GenericInputPrompt from './GenericInputPrompt';
+import BoolInputPrompt from './BoolInputPrompt';
 
-export {GenericInputPrompt, BoolInputPrompt}
+export { GenericInputPrompt, BoolInputPrompt };

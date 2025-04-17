@@ -1,5 +1,5 @@
-import type { App} from "obsidian";
-import { ButtonComponent, Modal, TextComponent } from "obsidian";
+import type { App } from 'obsidian';
+import { ButtonComponent, Modal, TextComponent } from 'obsidian';
 
 // Credit to QuickAdd by chhoumann
 // https://github.com/chhoumann/quickadd/blob/master/src/gui/GenericInputPrompt/GenericInputPrompt.ts#L6
@@ -14,7 +14,7 @@ export default class GenericInputPrompt extends Modal {
 	private input: string;
 	private readonly placeholder: string;
 	private readonly required: boolean;
-	private validator: ((text:string, notify:boolean) => boolean) | undefined;
+	private validator: ((text: string, notify: boolean) => boolean) | undefined;
 
 	public static Prompt(
 		app: App,
@@ -22,16 +22,9 @@ export default class GenericInputPrompt extends Modal {
 		placeholder?: string,
 		value?: string,
 		required?: boolean,
-    validator?: (text:string, notify:boolean) => boolean,
+		validator?: (text: string, notify: boolean) => boolean,
 	): Promise<string> {
-		const newPromptModal = new GenericInputPrompt(
-			app,
-			header,
-			placeholder,
-			value,
-			required,
-      validator,
-		);
+		const newPromptModal = new GenericInputPrompt(app, header, placeholder, value, required, validator);
 		return newPromptModal.waitForClose;
 	}
 
@@ -41,14 +34,14 @@ export default class GenericInputPrompt extends Modal {
 		placeholder?: string,
 		value?: string,
 		required?: boolean,
-    validator?: (text:string, notify:boolean) => boolean,
+		validator?: (text: string, notify: boolean) => boolean,
 	) {
 		super(app);
 		this.header = header;
-		this.placeholder = placeholder ?? "";
-		this.input = value ?? "";
+		this.placeholder = placeholder ?? '';
+		this.input = value ?? '';
 		this.required = required ?? false;
-    this.validator = validator;
+		this.validator = validator;
 
 		this.waitForClose = new Promise<string>((resolve, reject) => {
 			this.resolvePromise = resolve;
@@ -64,55 +57,44 @@ export default class GenericInputPrompt extends Modal {
 		this.contentEl.empty();
 		this.titleEl.textContent = this.header;
 
-		if (this.required){
-			this.titleEl.addClass("requiredInputHeader");
+		if (this.required) {
+			this.titleEl.addClass('requiredInputHeader');
 		}
 
 		const mainContentContainer: HTMLDivElement = this.contentEl.createDiv();
-		this.inputComponent = this.createInputField(
-			mainContentContainer,
-			this.placeholder,
-			this.input
-		);
+		this.inputComponent = this.createInputField(mainContentContainer, this.placeholder, this.input);
 		this.createButtonBar(mainContentContainer);
 	}
 
-	protected createInputField(
-		container: HTMLElement,
-		placeholder?: string,
-		value?: string
-	) {
+	protected createInputField(container: HTMLElement, placeholder?: string, value?: string) {
 		const textComponent = new TextComponent(container);
 
-		textComponent.inputEl.classList.add("text-input");
-		textComponent.setPlaceholder(placeholder ?? "")
-			.setValue( (value || "").toString() )
-			.onChange((value) => {
-				this.input = value
+		textComponent.inputEl.classList.add('text-input');
+		textComponent
+			.setPlaceholder(placeholder ?? '')
+			.setValue((value || '').toString())
+			.onChange(value => {
+				this.input = value;
 				this.updateInputValidation(textComponent, value);
 			})
-			.inputEl.addEventListener("keydown", this.submitEnterCallback);
-		
-    this.updateInputValidation(textComponent, (value || ""));
-		
+			.inputEl.addEventListener('keydown', this.submitEnterCallback);
+
+		this.updateInputValidation(textComponent, value || '');
+
 		return textComponent;
 	}
 
-  protected updateInputValidation(textComponent:TextComponent, value:string){
-    if (this.validator){
-      if (this.validator(value, false)){
-        textComponent.inputEl.removeClass("requiredInput");
-      } else {
-        textComponent.inputEl.addClass("requiredInput");
-      }
-    }
-  }
+	protected updateInputValidation(textComponent: TextComponent, value: string) {
+		if (this.validator) {
+			if (this.validator(value, false)) {
+				textComponent.inputEl.removeClass('requiredInput');
+			} else {
+				textComponent.inputEl.addClass('requiredInput');
+			}
+		}
+	}
 
-	private createButton(
-		container: HTMLElement,
-		text: string,
-		callback: (evt: MouseEvent) => unknown
-	) {
+	private createButton(container: HTMLElement, text: string, callback: (evt: MouseEvent) => unknown) {
 		const btn = new ButtonComponent(container);
 		btn.setButtonText(text).onClick(callback);
 
@@ -120,38 +102,30 @@ export default class GenericInputPrompt extends Modal {
 	}
 
 	private createButtonBar(mainContentContainer: HTMLDivElement) {
-		const buttonBarContainer: HTMLDivElement =
-			mainContentContainer.createDiv();
-		this.createButton(
-			buttonBarContainer,
-			"Ok",
-			this.submitClickCallback
-		).setCta().buttonEl.classList.add("ok-button");
-		this.createButton(
-			buttonBarContainer,
-			"Cancel",
-			this.cancelClickCallback
-		);
+		const buttonBarContainer: HTMLDivElement = mainContentContainer.createDiv();
+		this.createButton(buttonBarContainer, 'Ok', this.submitClickCallback)
+			.setCta()
+			.buttonEl.classList.add('ok-button');
+		this.createButton(buttonBarContainer, 'Cancel', this.cancelClickCallback);
 
-		buttonBarContainer.classList.add("button-bar");
+		buttonBarContainer.classList.add('button-bar');
 	}
 
 	private submitClickCallback = (evt: MouseEvent) => this.submit();
 	private cancelClickCallback = (evt: MouseEvent) => this.cancel();
 
 	private submitEnterCallback = (evt: KeyboardEvent) => {
-		if (!evt.isComposing && evt.key === "Enter") {
+		if (!evt.isComposing && evt.key === 'Enter') {
 			evt.preventDefault();
 			this.submit();
 		}
 	};
 
 	private submit() {
-    if (this.validator && !this.validator(this.input, true)){
-			if (this.required)
-				return;
+		if (this.validator && !this.validator(this.input, true)) {
+			if (this.required) return;
 			else {
-				this.input = "";
+				this.input = '';
 				// if invalid and not required, submit empty string
 			}
 		}
@@ -166,15 +140,12 @@ export default class GenericInputPrompt extends Modal {
 	}
 
 	private resolveInput() {
-		if (!this.didSubmit) this.rejectPromise("No input given.");
+		if (!this.didSubmit) this.rejectPromise('No input given.');
 		else this.resolvePromise(this.input);
 	}
 
 	private removeInputListener() {
-		this.inputComponent.inputEl.removeEventListener(
-			"keydown",
-			this.submitEnterCallback
-		);
+		this.inputComponent.inputEl.removeEventListener('keydown', this.submitEnterCallback);
 	}
 
 	onOpen() {

@@ -1,5 +1,5 @@
-import type { App} from "obsidian";
-import { ButtonComponent, Modal, TextComponent } from "obsidian";
+import type { App } from 'obsidian';
+import { ButtonComponent, Modal, TextComponent } from 'obsidian';
 
 // Modified from QuickAdd by chhoumann
 // https://github.com/chhoumann/quickadd/blob/master/src/gui/GenericInputPrompt/GenericInputPrompt.ts#L6
@@ -10,14 +10,8 @@ export default class BoolInputPrompt extends Modal {
 	private resolvePromise: (input: boolean) => void;
 	private didSubmit = false;
 
-	public static Prompt(
-		app: App,
-		header: string,
-	): Promise<boolean> {
-		const newPromptModal = new BoolInputPrompt(
-			app,
-			header,
-		);
+	public static Prompt(app: App, header: string): Promise<boolean> {
+		const newPromptModal = new BoolInputPrompt(app, header);
 		return newPromptModal.waitForClose;
 	}
 
@@ -26,7 +20,7 @@ export default class BoolInputPrompt extends Modal {
 		private header: string,
 	) {
 		super(app);
-		
+
 		this.waitForClose = new Promise<boolean>((resolve, reject) => {
 			this.resolvePromise = resolve;
 		});
@@ -44,12 +38,7 @@ export default class BoolInputPrompt extends Modal {
 		this.createButtonBar(mainContentContainer);
 	}
 
-
-	private createButton(
-		container: HTMLElement,
-		text: string,
-		callback: (evt: MouseEvent) => unknown
-	) {
+	private createButton(container: HTMLElement, text: string, callback: (evt: MouseEvent) => unknown) {
 		const btn = new ButtonComponent(container);
 		btn.setButtonText(text).onClick(callback);
 
@@ -57,25 +46,17 @@ export default class BoolInputPrompt extends Modal {
 	}
 
 	private createButtonBar(mainContentContainer: HTMLDivElement) {
-		const buttonBarContainer: HTMLDivElement =
-			mainContentContainer.createDiv();
-		this.createButton(
-			buttonBarContainer,
-			"Ok",
-			this.submitClickCallback
-		).setCta().buttonEl.classList.add("ok-button");
-		this.createButton(
-			buttonBarContainer,
-			"Cancel",
-			this.cancelClickCallback
-		);
+		const buttonBarContainer: HTMLDivElement = mainContentContainer.createDiv();
+		this.createButton(buttonBarContainer, 'Ok', this.submitClickCallback)
+			.setCta()
+			.buttonEl.classList.add('ok-button');
+		this.createButton(buttonBarContainer, 'Cancel', this.cancelClickCallback);
 
-		buttonBarContainer.classList.add("button-bar");
+		buttonBarContainer.classList.add('button-bar');
 	}
 
 	private submitClickCallback = (evt: MouseEvent) => this.submit();
 	private cancelClickCallback = (evt: MouseEvent) => this.cancel();
-
 
 	private submit() {
 		this.didSubmit = true;
