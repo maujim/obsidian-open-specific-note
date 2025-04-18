@@ -1,377 +1,41 @@
-import {
-    App,
-    Notice,
-    PluginSettingTab,
-    Setting,
-    TFolder,
-    TextComponent,
-} from 'obsidian'
-import FnOPlugin from './main'
-import { FolderFilterSet, NoteFilterSet } from 'src'
-import { BoolInputPrompt, GenericInputPrompt } from './UI'
+import { App, PluginSettingTab, Setting } from 'obsidian'
+import OpenMyNotePlugin from './main'
 
-export interface SettingsFNO {
-    pickerIndex: number
-    noteFilterSets: NoteFilterSet[]
+export interface SettingsInterface {
+    notePath: string
 }
 
-export const DEFAULT_SETTINGS: SettingsFNO = {
-    pickerIndex: 0,
-    noteFilterSets: [],
+export const DEFAULT_SETTINGS: SettingsInterface = {
+    notePath: 'the note.md',
 }
 
-export class FNOSettingTab extends PluginSettingTab {
-    plugin: FnOPlugin
+export class SettingsTab extends PluginSettingTab {
+    plugin: OpenMyNotePlugin
 
-    constructor(app: App, plugin: FnOPlugin) {
+    constructor(app: App, plugin: OpenMyNotePlugin) {
         super(app, plugin)
         this.plugin = plugin
     }
 
     display(): void {
-        const {
-            containerEl,
-            plugin: { settings },
-        } = this
+        const { containerEl } = this
+
         containerEl.empty()
+        containerEl.createEl('h2', { text: 'Open My Favorite Note Settings' })
 
         new Setting(containerEl)
-            .setName('Picker mode')
+            .setName('Note Path')
             .setDesc(
-                'Picker types: ' +
-                    this.plugin.pickers
-                        .map((p) => `${p.name}: ${p.description}`)
-                        .join(', '),
+                "Enter the exact path to the note you want to open (e.g., 'Folder/Note.md')",
             )
-            .addDropdown((dropdown) => {
-                // add populate dropdown options
-                this.plugin.pickers.forEach((picker, index) => {
-                    dropdown.addOption(index.toString(), picker.name)
-                })
-
-                // select current picker
-                dropdown.setValue(settings.pickerIndex.toString())
-
-                // change selected picker on change
-                dropdown.onChange(async (pickerIndexString) => {
-                    const chosenPickerIndex: number =
-                        parseInt(pickerIndexString)
-                    console.log(
-                        'New picker mode',
-                        this.plugin.pickers[chosenPickerIndex].name,
-                    )
-                    settings.pickerIndex = chosenPickerIndex
-                    await this.plugin.saveSettings()
-                })
-            })
-
-        new Setting(containerEl).setName('Notes').setHeading()
-
-        new Setting(containerEl)
-            .setName('Note filter sets')
-            .setHeading()
-            .setDesc(`Add, rename and delete filter sets here`)
-    }
-}
-
-export function addFilterSetHeader(
-    containerEl: HTMLElement,
-    header: string,
-    description = '',
-    deletable = true,
-    renamable = true,
-    validateSetName: (name: string, notify: boolean) => boolean,
-    saveName: (newName: string) => Promise<void> | void,
-    deleteSet: () => Promise<void> | void,
-) {
-    const filterSetHeader = new Setting(containerEl)
-        .setName(header)
-        .setHeading()
-        .setDesc(description)
-
-    if (renamable) {
-        filterSetHeader.addExtraButton((btn) => {
-            btn.setIcon('pencil').onClick(async () => {
-                const newName = await GenericInputPrompt.Prompt(
-                    this.app,
-                    'New filter set name',
-                    undefined,
-                    header,
-                    true,
-                    validateSetName,
-                )
-
-                const newNameFormatted = newName.trim()
-                if (!newNameFormatted) {
-                    new Notice('Error: Filter Set Name cannot be blank')
-                    return
-                }
-
-                await saveName(newNameFormatted)
-            })
-        })
-    }
-
-    if (deletable) {
-        filterSetHeader.addExtraButton((btn) => {
-            btn.setIcon('trash-2').onClick(async () => {
-                if (
-                    await BoolInputPrompt.Prompt(this.app, `Delete ${header}?`)
-                ) {
-                    await deleteSet()
-                }
-            })
-        })
-    }
-}
-
-export function createSettingsNoteFilterSets(
-    containerEl: HTMLElement,
-    filterSets: NoteFilterSet[],
-    saveFilterSets: (sets: NoteFilterSet[]) => Promise<void> | void,
-    refreshDisplay: () => void,
-) {
-    filterSets.forEach((filterSet, i) => {
-        createNoteFilterSetInputs(
-            containerEl,
-            filterSet,
-            '',
-            true,
-            true,
-            (text, notify) => {
-                const nameNotChanged = text === filterSet.name
-                if (nameNotChanged) return true
-
-                const nameUnique = !filterSets.some(
-                    (set) => set.name === text.trim(),
-                )
-                const nameHasCharacters = text.trim().length > 0
-
-                if (!nameUnique && notify)
-                    new Notice('Error: Filter Set Name must be unique')
-
-                if (!nameHasCharacters && notify)
-                    new Notice('Error: Filter Set Name cannot be blank')
-
-                return nameUnique && nameHasCharacters
-            },
-            async (set) => {
-                if (!set) {
-                    filterSets.splice(i, 1)
-                    await saveFilterSets(filterSets)
-                    refreshDisplay()
-                } else {
-                    filterSets[i] = set
-                    await saveFilterSets(filterSets)
-                }
-            },
-            refreshDisplay,
-        )
-    })
-
-    new Setting(containerEl).addButton((button) => {
-        button.setButtonText('Add note filter set')
-        button.onClick(async (e) => {
-            const newSetName = await GenericInputPrompt.Prompt(
-                this.app,
-                'New filter set name',
-                undefined,
-                undefined,
-                true,
-                (text, notify) => {
-                    const nameUnique = !filterSets.some(
-                        (set) => set.name === text.trim(),
-                    )
-                    if (!nameUnique && notify)
-                        new Notice('Error: Filter Set Name must be unique')
-
-                    const nameHasCharacters = text.trim().length > 0
-                    if (!nameHasCharacters && notify)
-                        new Notice('Error: Filter Set Name cannot be blank')
-
-                    return nameUnique && nameHasCharacters
-                },
+            .addText((text) =>
+                text
+                    .setPlaceholder('MyNotes/FavoriteNote.md')
+                    .setValue(this.plugin.settings.notePath)
+                    .onChange(async (value) => {
+                        this.plugin.settings.notePath = value
+                        await this.plugin.saveSettings()
+                    }),
             )
-
-            const newNameFormatted = newSetName.trim()
-            if (!newNameFormatted) {
-                new Notice('Error: Filter Set Name cannot be blank')
-                return
-            }
-
-            const newFilterSet: NoteFilterSet = {
-                ...DEFAULT_NOTE_FILTER_SET,
-                name: newNameFormatted,
-            }
-
-            await saveFilterSets([...filterSets, newFilterSet])
-            refreshDisplay()
-        })
-    })
-}
-
-export function createNoteFilterSetInputs(
-    containerEl: HTMLElement,
-    filterSet: NoteFilterSet,
-    description = '',
-    deletable = true,
-    renamable = true,
-    validateSetName: (name: string, notify: boolean) => boolean,
-    saveSet: (set: NoteFilterSet | null) => Promise<void> | void,
-    refreshDisplay: () => void,
-) {
-    addFilterSetHeader(
-        containerEl,
-        filterSet.name,
-        description,
-        deletable,
-        renamable,
-        validateSetName,
-        async (name) => {
-            filterSet.name = name
-            await saveSet(filterSet)
-            refreshDisplay()
-        },
-        () => {
-            saveSet(null)
-        },
-    )
-
-    new Setting(containerEl).setName('Include path name').addText((text) => {
-        text.setValue(filterSet.includePathName).onChange(async (v) => {
-            filterSet.includePathName = v.trim()
-            await saveSet(filterSet)
-        })
-    })
-
-    new Setting(containerEl).setName('Exclude path name').addText((text) => {
-        text.setValue(filterSet.excludePathName).onChange(async (v) => {
-            filterSet.excludePathName = v.trim()
-            await saveSet(filterSet)
-        })
-    })
-
-    new Setting(containerEl).setName('Include note name').addText((text) => {
-        text.setValue(filterSet.includeNoteName).onChange(async (v) => {
-            filterSet.includeNoteName = v.trim()
-            await saveSet(filterSet)
-        })
-    })
-
-    new Setting(containerEl).setName('Exclude note name').addText((text) => {
-        text.setValue(filterSet.excludeNoteName).onChange(async (v) => {
-            filterSet.excludeNoteName = v.trim()
-            await saveSet(filterSet)
-        })
-    })
-
-    new Setting(containerEl).setName('Include tags').addText((text) => {
-        text.setPlaceholder('#Tag1, #Tag2, #Tag3')
-            .setValue(filterSet.includeTags)
-            .onChange(async (v) => {
-                filterSet.includeTags = v.trim()
-                await saveSet(filterSet)
-            })
-    })
-
-    new Setting(containerEl).setName('Exclude tags').addText((text) => {
-        text.setPlaceholder('#Tag1, #Tag2, #Tag3')
-            .setValue(filterSet.excludeTags)
-            .onChange(async (v) => {
-                filterSet.excludeTags = v.trim()
-                await saveSet(filterSet)
-            })
-    })
-}
-
-export function createFolderFilterSetInputs(
-    containerEl: HTMLElement,
-    filterSet: FolderFilterSet,
-    description = '',
-    deletable = true,
-    renamable = true,
-    validateSetName: (name: string, notify: boolean) => boolean,
-    saveSet: (set: FolderFilterSet | null) => Promise<void> | void,
-    refreshDisplay: () => void,
-) {
-    addFilterSetHeader(
-        containerEl,
-        filterSet.name,
-        description,
-        deletable,
-        renamable,
-        validateSetName,
-        async (name) => {
-            filterSet.name = name
-            await saveSet(filterSet)
-            refreshDisplay()
-        },
-        () => {
-            saveSet(null)
-        },
-    )
-
-    new Setting(containerEl).setName('Root folder').addText((text) => {
-        text.setPlaceholder('/')
-            .setValue(filterSet.rootFolder)
-            .onChange(async (v) => {
-                filterSet.rootFolder = v.trim() || '/'
-                await saveSet(filterSet)
-            })
-    })
-
-    new Setting(containerEl).setName('Include folder name').addText((text) => {
-        text.setValue(filterSet.includeFolderName).onChange(async (v) => {
-            filterSet.includeFolderName = v.trim()
-            await saveSet(filterSet)
-        })
-    })
-
-    new Setting(containerEl).setName('Exclude folder name').addText((text) => {
-        text.setValue(filterSet.excludeFolderName).onChange(async (v) => {
-            filterSet.excludeFolderName = v.trim()
-            await saveSet(filterSet)
-        })
-    })
-
-    new Setting(containerEl).setName('Include path name').addText((text) => {
-        text.setValue(filterSet.includePathName).onChange(async (v) => {
-            filterSet.includePathName = v.trim()
-            await saveSet(filterSet)
-        })
-    })
-
-    new Setting(containerEl).setName('Exclude path name').addText((text) => {
-        text.setValue(filterSet.excludePathName).onChange(async (v) => {
-            filterSet.excludePathName = v.trim()
-            await saveSet(filterSet)
-        })
-    })
-
-    new Setting(containerEl)
-        .setDesc(
-            'The depth of folders to search down to and should folders above the target depth be shown',
-        )
-        .addToggle((toggle) => {
-            toggle.setTooltip('Include folders above the target depth')
-            toggle.setValue(filterSet.includeParents)
-            toggle.onChange(async (v) => {
-                filterSet.includeParents = v
-                await saveSet(filterSet)
-            })
-        })
-        .addText((text) => {
-            text.setValue((filterSet.depth || '').toString())
-            text.setPlaceholder('1')
-            text.onChange(async (v) => {
-                const depth = parseInt(v)
-                if (!depth) {
-                    new Notice('Error: depth must be an number')
-                    return
-                }
-
-                filterSet.depth = depth || 1
-                await saveSet(filterSet)
-            })
-        })
+    }
 }
