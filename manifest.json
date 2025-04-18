@@ -1,10 +1,10 @@
 {
-	"author": "mukund",
-	"minAppVersion": "0.15.0",
-	"name": "Open specific notes",
-	"version": "0.1.0",
-	"authorUrl": "https://maujim.github.io",
-	"description": "Open specific notes",
-	"id": "open-specific-note",
-	"isDesktopOnly": false
+  "author": "mukund",
+  "minAppVersion": "0.15.0",
+  "name": "Open specific notes",
+  "version": "0.1.0",
+  "authorUrl": "https://maujim.github.io",
+  "description": "Open specific notes",
+  "id": "open-specific-note",
+  "isDesktopOnly": false
 }
