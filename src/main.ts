@@ -8,8 +8,8 @@ export default class OpenMyNotePlugin extends Plugin {
     await this.loadSettings()
 
     this.addCommand({
-      id: 'open-my-favorite-note',
-      name: 'Open My Favorite Note',
+      id: 'open-favourite-note',
+      name: 'Open Favourite Note',
       callback: async () => {
         const file = this.app.vault.getAbstractFileByPath(
           this.settings.notePath,

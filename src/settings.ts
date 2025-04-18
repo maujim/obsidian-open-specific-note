@@ -21,16 +21,16 @@ export class SettingsTab extends PluginSettingTab {
     const { containerEl } = this
 
     containerEl.empty()
-    containerEl.createEl('h2', { text: 'Open My Favorite Note Settings' })
+    containerEl.createEl('h1', { text: 'Open Specific Notes' })
+    containerEl.createEl('p', {
+      text: "Enter the exact path relative to the Obsidian Vault (e.g., 'target-note.md')",
+    })
 
     new Setting(containerEl)
-      .setName('Note Path')
-      .setDesc(
-        "Enter the exact path to the note you want to open (e.g., 'Folder/Note.md')",
-      )
+      .setName('Note #1')
       .addText((text) =>
         text
-          .setPlaceholder('MyNotes/FavoriteNote.md')
+          .setPlaceholder('target-note.md')
           .setValue(this.plugin.settings.notePath)
           .onChange(async (value) => {
             this.plugin.settings.notePath = value
