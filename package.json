@@ -1,7 +1,7 @@
 {
   "name": "obsidian-open-specific-note",
   "version": "1.3.0",
-  "description": "Open notes and folders. Chose from sets defined by filters.",
+  "description": "Expose commands to open specific notes.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
