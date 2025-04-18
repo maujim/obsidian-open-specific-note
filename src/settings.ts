@@ -2,11 +2,13 @@ import { App, PluginSettingTab, Setting } from 'obsidian'
 import OpenMyNotePlugin from './main'
 
 export interface SettingsInterface {
-  notePath: string
+  notes: string[]
+  numNotes: number
 }
 
 export const DEFAULT_SETTINGS: SettingsInterface = {
-  notePath: 'the note.md',
+  notes: [],
+  numNotes: 10,
 }
 
 export class SettingsTab extends PluginSettingTab {
@@ -26,16 +28,17 @@ export class SettingsTab extends PluginSettingTab {
       text: "Enter the exact path relative to the Obsidian Vault (e.g., 'target-note.md')",
     })
 
-    new Setting(containerEl)
-      .setName('Note #1')
-      .addText((text) =>
+    for (let i = 0; i < this.plugin.settings.numNotes; i++) {
+      new Setting(containerEl).setName(`Note #${i}`).addText((text) =>
         text
           .setPlaceholder('target-note.md')
-          .setValue(this.plugin.settings.notePath)
+          .setValue(this.plugin.settings.notes[i] || '')
           .onChange(async (value) => {
-            this.plugin.settings.notePath = value
+            if (!value) return
+            this.plugin.settings.notes[i] = value
             await this.plugin.saveSettings()
           }),
       )
+    }
   }
 }

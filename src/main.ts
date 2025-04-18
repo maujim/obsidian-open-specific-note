@@ -7,20 +7,26 @@ export default class OpenMyNotePlugin extends Plugin {
   async onload() {
     await this.loadSettings()
 
-    this.addCommand({
-      id: 'open-favourite-note',
-      name: 'Open Favourite Note',
-      callback: async () => {
-        const file = this.app.vault.getAbstractFileByPath(
-          this.settings.notePath,
-        )
-        if (file && file instanceof TFile) {
-          this.app.workspace.getLeaf(true).openFile(file)
-        } else {
-          new Notice('Note not found at: ' + this.settings.notePath)
-        }
-      },
-    })
+    for (let i = 0; i < this.settings.numNotes; i++) {
+      if (!this.settings.notes[i]) continue
+
+      const note_name = this.settings.notes[i]
+
+      this.addCommand({
+        id: `open-note-${i}`,
+        name: `${i}: ${note_name}`,
+        callback: async () => {
+          const file = this.app.vault.getAbstractFileByPath(
+            this.settings.notes[i],
+          )
+          if (file && file instanceof TFile) {
+            this.app.workspace.getLeaf(true).openFile(file)
+          } else {
+            new Notice('Note not found at: ' + this.settings.notes[i])
+          }
+        },
+      })
+    }
 
     this.addSettingTab(new SettingsTab(this.app, this))
   }
